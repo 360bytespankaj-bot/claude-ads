@@ -345,6 +345,13 @@ def generate_replicate(prompt: str, width: int, height: int, api_key: str, model
     url = output[0] if isinstance(output, list) else str(output)
     if urlparse(url).scheme != "https":
         raise RuntimeError(f"Replicate returned non-HTTPS URL: {url[:100]}")
+    # Defense-in-depth: Replicate is trusted but revalidate against the SSRF
+    # blocklist so an upstream compromise can't redirect us to a private IP.
+    try:
+        from url_utils import validate_url as _validate_url
+        _validate_url(url)
+    except ValueError as ve:
+        raise RuntimeError(f"Replicate URL failed SSRF validation: {ve}") from ve
     resp = requests.get(url, timeout=120)
     resp.raise_for_status()
     return resp.content

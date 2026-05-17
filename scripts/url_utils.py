@@ -1,12 +1,41 @@
 """Shared URL validation utilities with SSRF protection.
 
-Used by fetch_page.py, analyze_landing.py, and capture_screenshot.py to
-validate user-supplied URLs before making HTTP requests or launching browsers.
+Used by fetch_page.py, analyze_landing.py, capture_screenshot.py, and
+generate_image.py to validate user-supplied URLs before making HTTP requests
+or launching browsers, and to sanitize exception messages before surfacing
+them to the user.
 """
 
 import ipaddress
+import re
 import socket
 from urllib.parse import urlparse
+
+# Sensitive substrings to redact from any error message before logging or
+# returning to the caller. Catches `key=...`, `token: ...`, `secret=...`,
+# `password=...`, and bare `Bearer <token>` headers regardless of case.
+_SENSITIVE_PATTERN = re.compile(
+    r'(key|token|secret|password)\s*[=:]\s*\S+|Bearer\s+\S+', re.IGNORECASE,
+)
+
+
+def sanitize_error(err: Exception) -> str:
+    """Strip potential API keys / tokens / passwords from an exception message.
+
+    Use whenever an exception's str() reaches stdout, JSON output, or a user-
+    facing error field. The redaction is irreversible — the goal is to make
+    the message safe to log, not to preserve the original details.
+
+    Args:
+        err: The exception to format.
+
+    Returns:
+        The exception string with sensitive substrings replaced.
+    """
+    msg = str(err)
+    return _SENSITIVE_PATTERN.sub(
+        lambda m: (m.group(1) + '=***') if m.group(1) else 'Bearer ***', msg,
+    )
 
 _BLOCKED_NETS = [
     # IPv4 private/reserved

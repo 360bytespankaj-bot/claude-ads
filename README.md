@@ -1,15 +1,23 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Claude Ads: Paid Advertising Audit Skill for Claude Code" width="100%">
+  <img src="assets/banner.png" alt="Claude Ads: Multi-Host Paid Advertising Audit & Optimization Skill" width="100%">
 </p>
 
-# Claude Ads: Paid Advertising Audit Skill for Claude Code
+# Claude Ads: Paid Advertising Audit & Optimization Skill
 
-Comprehensive paid advertising audit and optimization skill for Claude Code. Covers Google Ads, Meta Ads, YouTube Ads, LinkedIn Ads, TikTok Ads, Microsoft Ads, and Apple Ads with **250+ audit checks**, industry-specific templates, parallel subagent delegation, PPC financial modeling, A/B test design, and PDF report generation.
+Comprehensive paid advertising audit and optimization skill conforming to the [Agent Skills](https://agentskills.io) open standard. Built and verified on Claude Code; experimental support for OpenAI Codex CLI, Cursor, Windsurf, Gemini CLI, and Goose. Covers Google Ads, Meta Ads, YouTube Ads, LinkedIn Ads, TikTok Ads, Microsoft Ads, Apple Ads, and (Wave 2+) Amazon Ads with **250+ audit checks**, industry-specific templates, parallel subagent delegation, PPC financial modeling, A/B test design, and PDF report generation.
 
-[![Claude Code Skill](https://img.shields.io/badge/Claude%20Code-Skill-blue)](https://claude.ai/claude-code)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skills-Compatible-blue)](https://agentskills.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/AgriciDaniel/claude-ads)](https://github.com/AgriciDaniel/claude-ads/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/AgriciDaniel/claude-ads/ci.yml?branch=main&label=CI)](https://github.com/AgriciDaniel/claude-ads/actions)
+
+**Host support:**
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Verified-brightgreen)](https://claude.ai/claude-code)
+[![Codex CLI](https://img.shields.io/badge/Codex%20CLI-Experimental-yellow)](https://github.com/openai/codex)
+[![Cursor](https://img.shields.io/badge/Cursor-Experimental-yellow)](https://cursor.sh)
+[![Windsurf](https://img.shields.io/badge/Windsurf-Experimental-yellow)](https://codeium.com/windsurf)
+[![Gemini CLI](https://img.shields.io/badge/Gemini%20CLI-Experimental-yellow)](https://github.com/google-gemini/gemini-cli)
+[![Goose](https://img.shields.io/badge/Goose-Experimental-yellow)](https://block.github.io/goose/)
 
 > **Blog:** [Read the full ad audit breakdown](https://agricidaniel.com/blog/claude-code-ad-agency)
 
@@ -30,7 +38,7 @@ Comprehensive paid advertising audit and optimization skill for Claude Code. Cov
 
 ## Installation
 
-### Plugin Install (Recommended)
+### Plugin Install (Claude Code — Recommended)
 
 Add the marketplace and install in Claude Code:
 
@@ -53,16 +61,61 @@ curl -fsSL https://raw.githubusercontent.com/AgriciDaniel/claude-ads/main/instal
 irm https://raw.githubusercontent.com/AgriciDaniel/claude-ads/main/install.ps1 | iex
 ```
 
+### Cross-Host Install (Codex CLI / Cursor / Windsurf / Gemini CLI / Goose)
+
+The installer auto-detects each host's expected skill directory via `--target=<host>`:
+
+```bash
+# Unix/macOS/Linux
+bash install.sh --target=codex      # OpenAI Codex CLI       (experimental)
+bash install.sh --target=cursor     # Cursor IDE              (experimental)
+bash install.sh --target=windsurf   # Windsurf IDE            (experimental)
+bash install.sh --target=gemini     # Gemini CLI              (experimental)
+bash install.sh --target=goose      # Goose CLI               (experimental)
+```
+
+```powershell
+# Windows PowerShell
+.\install.ps1 -Target codex
+.\install.ps1 -Target cursor
+.\install.ps1 -Target windsurf
+.\install.ps1 -Target gemini
+.\install.ps1 -Target goose
+```
+
+**Per-host install path table:**
+
+| Target     | Skills root                                     | Agents root                                | Python deps |
+|------------|-------------------------------------------------|--------------------------------------------|-------------|
+| `claude`   | `~/.claude/skills`                              | `~/.claude/agents`                         | ✓           |
+| `codex`    | `~/.codex/skills`                               | `~/.codex/agents`                          | ✓           |
+| `cursor`   | `~/.cursor/extensions/claude-ads/skills`        | `~/.cursor/extensions/claude-ads/agents`   | skipped     |
+| `windsurf` | `~/.windsurf/skills`                            | `~/.windsurf/agents`                       | skipped     |
+| `gemini`   | `~/.gemini/extensions/claude-ads/skills`        | `~/.gemini/extensions/claude-ads/agents`   | skipped     |
+| `goose`    | `~/.config/goose/skills`                        | `~/.config/goose/agents`                   | skipped     |
+
+**Path overrides** — if your host CLI uses a different layout, pin paths explicitly:
+
+```bash
+bash install.sh --target=claude --skill-dir=~/custom/skills --agent-dir=~/custom/agents
+```
+
+Targets and override paths are strictly whitelist-validated (no shell injection, no flag confusion, no `..` segments, no UNC paths).
+
+> ⚠ **Experimental targets:** Only Claude Code is verified end-to-end. The other host install paths follow each host's documented convention but their skill discovery / sub-skill routing may differ. Open an issue with reproduction details if a target needs adjustment.
+
 ### Manual Install
 
 ```bash
 git clone https://github.com/AgriciDaniel/claude-ads.git
 cd claude-ads
-./install.sh          # Unix/macOS/Linux
+./install.sh                # Unix/macOS/Linux, default target=claude
+./install.sh --target=codex # any cross-host target
 ```
 
 ```powershell
-.\install.ps1         # Windows PowerShell
+.\install.ps1                # Windows PowerShell, default Target=claude
+.\install.ps1 -Target codex
 ```
 
 <p align="center">

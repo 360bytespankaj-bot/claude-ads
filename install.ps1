@@ -1,22 +1,136 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Claude Ads Installer for Windows
+    Claude Ads Installer for Windows (multi-host).
 .DESCRIPTION
     Installs the Claude Ads skill, sub-skills, agents, and reference files
-    for Claude Code on Windows systems.
+    for Claude Code (default) or any of the supported experimental host CLIs.
+
+    Targets:
+      claude     Claude Code (verified)
+      codex      OpenAI Codex CLI (experimental)
+      cursor     Cursor IDE (experimental)
+      windsurf   Windsurf IDE (experimental)
+      gemini     Gemini CLI (experimental)
+      goose      Goose CLI (experimental)
+.PARAMETER Target
+    Which host CLI to install for. Default: claude.
+.PARAMETER SkillDir
+    Override the target's default skill install root.
+.PARAMETER AgentDir
+    Override the target's default agent install root.
+.EXAMPLE
+    .\install.ps1
+.EXAMPLE
+    .\install.ps1 -Target codex
+.EXAMPLE
+    .\install.ps1 -SkillDir C:\Custom\Skills
 #>
+
+param(
+    [ValidateSet('claude','codex','cursor','windsurf','gemini','goose')]
+    [string]$Target = 'claude',
+    [string]$SkillDir = '',
+    [string]$AgentDir = ''
+)
 
 $ErrorActionPreference = "Stop"
 
+function Resolve-TargetPaths {
+    param([string]$T)
+    switch ($T) {
+        'claude' {
+            return @{
+                SkillBase = Join-Path $env:USERPROFILE ".claude\skills"
+                AgentDir  = Join-Path $env:USERPROFILE ".claude\agents"
+                AllowPip  = $true
+                Label     = "Claude Code"
+            }
+        }
+        'codex' {
+            return @{
+                SkillBase = Join-Path $env:USERPROFILE ".codex\skills"
+                AgentDir  = Join-Path $env:USERPROFILE ".codex\agents"
+                AllowPip  = $true
+                Label     = "OpenAI Codex CLI"
+            }
+        }
+        'cursor' {
+            return @{
+                SkillBase = Join-Path $env:USERPROFILE ".cursor\extensions\claude-ads\skills"
+                AgentDir  = Join-Path $env:USERPROFILE ".cursor\extensions\claude-ads\agents"
+                AllowPip  = $false
+                Label     = "Cursor IDE"
+            }
+        }
+        'windsurf' {
+            return @{
+                SkillBase = Join-Path $env:USERPROFILE ".windsurf\skills"
+                AgentDir  = Join-Path $env:USERPROFILE ".windsurf\agents"
+                AllowPip  = $false
+                Label     = "Windsurf IDE"
+            }
+        }
+        'gemini' {
+            return @{
+                SkillBase = Join-Path $env:USERPROFILE ".gemini\extensions\claude-ads\skills"
+                AgentDir  = Join-Path $env:USERPROFILE ".gemini\extensions\claude-ads\agents"
+                AllowPip  = $false
+                Label     = "Gemini CLI"
+            }
+        }
+        'goose' {
+            return @{
+                SkillBase = Join-Path $env:USERPROFILE ".config\goose\skills"
+                AgentDir  = Join-Path $env:USERPROFILE ".config\goose\agents"
+                AllowPip  = $false
+                Label     = "Goose CLI"
+            }
+        }
+        default {
+            throw "Unknown target: $T"
+        }
+    }
+}
+
+function Test-InstallPath {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
+    if ($Path -match '[\;\&\|\$\(\)\<\>\`]') { return $false }
+    if ($Path -match '\.\.') { return $false }
+    if ($Path -match '^[-]') { return $false }
+    if ($Path -match '^(\\\\|//)') { return $false }   # UNC paths
+    return $true
+}
+
 function Main {
-    $SkillDir = Join-Path $env:USERPROFILE ".claude\skills\ads"
-    $AgentDir = Join-Path $env:USERPROFILE ".claude\agents"
+    $paths = Resolve-TargetPaths -T $Target
+    $SkillBase = $paths.SkillBase
+    $AgentDirResolved = $paths.AgentDir
+    $AllowPip = $paths.AllowPip
+    $HostLabel = $paths.Label
+
+    if ($SkillDir) {
+        if (-not (Test-InstallPath -Path $SkillDir)) {
+            Write-Host "X Invalid -SkillDir: contains forbidden characters or traversal" -ForegroundColor Red
+            exit 1
+        }
+        $SkillBase = $SkillDir
+    }
+    if ($AgentDir) {
+        if (-not (Test-InstallPath -Path $AgentDir)) {
+            Write-Host "X Invalid -AgentDir: contains forbidden characters or traversal" -ForegroundColor Red
+            exit 1
+        }
+        $AgentDirResolved = $AgentDir
+    }
+
+    $SkillDirResolved = Join-Path $SkillBase "ads"
     $RepoUrl = "https://github.com/AgriciDaniel/claude-ads"
 
     Write-Host "=================================="
     Write-Host "   Claude Ads - Installer"
-    Write-Host "   Claude Code Paid Ads Skill"
+    Write-Host "   Target: $HostLabel"
     Write-Host "=================================="
     Write-Host ""
 
@@ -28,8 +142,8 @@ function Main {
     Write-Host "OK Git detected" -ForegroundColor Green
 
     # Create directories
-    New-Item -ItemType Directory -Path (Join-Path $SkillDir "references") -Force | Out-Null
-    New-Item -ItemType Directory -Path $AgentDir -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $SkillDirResolved "references") -Force | Out-Null
+    New-Item -ItemType Directory -Path $AgentDirResolved -Force | Out-Null
 
     # Clone to temp directory
     $TempDir = Join-Path $env:TEMP "claude-ads-install-$(Get-Random)"
@@ -44,13 +158,13 @@ function Main {
 
         # Copy main skill + references
         Write-Host "Installing skill files..."
-        Copy-Item "$TempDir\claude-ads\ads\SKILL.md" -Destination "$SkillDir\SKILL.md" -Force
-        Copy-Item "$TempDir\claude-ads\ads\references\*.md" -Destination "$SkillDir\references\" -Force
+        Copy-Item "$TempDir\claude-ads\ads\SKILL.md" -Destination "$SkillDirResolved\SKILL.md" -Force
+        Copy-Item "$TempDir\claude-ads\ads\references\*.md" -Destination "$SkillDirResolved\references\" -Force
 
         # Copy sub-skills
         Write-Host "Installing sub-skills..."
         Get-ChildItem "$TempDir\claude-ads\skills" -Directory | ForEach-Object {
-            $TargetDir = Join-Path $env:USERPROFILE ".claude\skills\$($_.Name)"
+            $TargetDir = Join-Path $SkillBase $_.Name
             New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
             Copy-Item (Join-Path $_.FullName "SKILL.md") -Destination "$TargetDir\SKILL.md" -Force
 
@@ -65,33 +179,38 @@ function Main {
 
         # Copy agents
         Write-Host "Installing subagents..."
-        Copy-Item "$TempDir\claude-ads\agents\*.md" -Destination "$AgentDir\" -Force
+        Copy-Item "$TempDir\claude-ads\agents\*.md" -Destination "$AgentDirResolved\" -Force
 
         # Copy scripts (optional Python tools)
         $ScriptsSource = "$TempDir\claude-ads\scripts"
         if (Test-Path $ScriptsSource) {
             Write-Host "Installing Python scripts..."
-            $ScriptsDir = Join-Path $SkillDir "scripts"
+            $ScriptsDir = Join-Path $SkillDirResolved "scripts"
             New-Item -ItemType Directory -Path $ScriptsDir -Force | Out-Null
             Copy-Item "$ScriptsSource\*.py" -Destination "$ScriptsDir\" -Force
-            Copy-Item "$TempDir\claude-ads\requirements.txt" -Destination "$SkillDir\requirements.txt" -Force
+            Copy-Item "$TempDir\claude-ads\requirements.txt" -Destination "$SkillDirResolved\requirements.txt" -Force
         }
 
-        # Install Python dependencies (landing page analysis, image validation)
         Write-Host ""
-        Write-Host "Installing Python dependencies..."
-        $ErrorActionPreference = "Continue"
-        pip install -q -r "$SkillDir\requirements.txt" 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "  OK Python dependencies installed" -ForegroundColor Green
+        if ($AllowPip) {
+            Write-Host "Installing Python dependencies..."
+            $ErrorActionPreference = "Continue"
+            pip install -q -r "$SkillDirResolved\requirements.txt" 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "  OK Python dependencies installed" -ForegroundColor Green
+            } else {
+                Write-Host "  Warning: pip install failed. Run manually: pip install -r $SkillDirResolved\requirements.txt" -ForegroundColor Yellow
+            }
+            $ErrorActionPreference = "Stop"
         } else {
-            Write-Host "  Warning: pip install failed. Run manually: pip install -r $SkillDir\requirements.txt" -ForegroundColor Yellow
+            Write-Host "i  Skipping Python dependencies - $HostLabel host runtime may not execute Python skills directly." -ForegroundColor Yellow
+            Write-Host "   If you need PDF reports / landing-page analysis / screenshots, install manually:"
+            Write-Host "     pip install -r $SkillDirResolved\requirements.txt"
         }
-        $ErrorActionPreference = "Stop"
 
         # Check for banana-claude (image generation provider)
         Write-Host ""
-        $BananaPath = Join-Path $env:USERPROFILE ".claude\skills\banana\SKILL.md"
+        $BananaPath = Join-Path $SkillBase "banana\SKILL.md"
         if (Test-Path $BananaPath) {
             Write-Host "  OK banana-claude detected (image generation ready)" -ForegroundColor Green
         } else {
@@ -101,20 +220,26 @@ function Main {
         }
 
         Write-Host ""
-        Write-Host "Claude Ads installed successfully!" -ForegroundColor Green
+        Write-Host "Claude Ads installed successfully for $HostLabel!" -ForegroundColor Green
         Write-Host ""
-        Write-Host "  Installed:"
+        Write-Host "  Installed to:"
+        Write-Host "    Skills: $SkillBase"
+        Write-Host "    Agents: $AgentDirResolved"
+        Write-Host ""
+        Write-Host "  Bundled:"
         Write-Host "    - 1 main skill (ads orchestrator)"
-        Write-Host "    - 19 sub-skills (platform + functional + creative)"
+        Write-Host "    - 22 sub-skills (platform + functional + creative)"
         Write-Host "    - 10 agents (6 audit + 4 creative)"
         Write-Host "    - 25 reference files"
         Write-Host "    - 12 industry templates"
         Write-Host ""
         Write-Host "Usage:"
-        Write-Host "  1. Start Claude Code:  claude"
+        Write-Host "  1. Start your host CLI"
         Write-Host "  2. Run commands:       /ads audit"
         Write-Host "                         /ads plan saas"
         Write-Host "                         /ads google"
+        Write-Host ""
+        Write-Host "To uninstall: .\uninstall.ps1 -Target $Target"
     }
     finally {
         # Cleanup temp directory

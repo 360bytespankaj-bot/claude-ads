@@ -1,47 +1,64 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Claude Ads Uninstaller for Windows
+    Claude Ads Uninstaller for Windows (multi-host).
 .DESCRIPTION
-    Removes the Claude Ads skill, sub-skills, agents, and reference files
-    from Claude Code on Windows systems.
+    Removes every ads-* sub-skill directory plus the orchestrator and bundled
+    agents from the chosen host's install root. Uses glob discovery so new
+    sub-skills don't require uninstaller updates.
+.PARAMETER Target
+    Which host CLI to uninstall from. Default: claude.
 #>
+
+param(
+    [ValidateSet('claude','codex','cursor','windsurf','gemini','goose')]
+    [string]$Target = 'claude'
+)
 
 $ErrorActionPreference = "Stop"
 
+function Resolve-TargetPaths {
+    param([string]$T)
+    switch ($T) {
+        'claude'   { return @{ SkillBase = Join-Path $env:USERPROFILE ".claude\skills";                                AgentDir = Join-Path $env:USERPROFILE ".claude\agents" } }
+        'codex'    { return @{ SkillBase = Join-Path $env:USERPROFILE ".codex\skills";                                 AgentDir = Join-Path $env:USERPROFILE ".codex\agents" } }
+        'cursor'   { return @{ SkillBase = Join-Path $env:USERPROFILE ".cursor\extensions\claude-ads\skills";          AgentDir = Join-Path $env:USERPROFILE ".cursor\extensions\claude-ads\agents" } }
+        'windsurf' { return @{ SkillBase = Join-Path $env:USERPROFILE ".windsurf\skills";                              AgentDir = Join-Path $env:USERPROFILE ".windsurf\agents" } }
+        'gemini'   { return @{ SkillBase = Join-Path $env:USERPROFILE ".gemini\extensions\claude-ads\skills";          AgentDir = Join-Path $env:USERPROFILE ".gemini\extensions\claude-ads\agents" } }
+        'goose'    { return @{ SkillBase = Join-Path $env:USERPROFILE ".config\goose\skills";                          AgentDir = Join-Path $env:USERPROFILE ".config\goose\agents" } }
+        default    { throw "Unknown target: $T" }
+    }
+}
+
 function Main {
-    Write-Host "Uninstalling Claude Ads..."
+    $paths = Resolve-TargetPaths -T $Target
+    $SkillBase = $paths.SkillBase
+    $AgentDir = $paths.AgentDir
 
-    $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
+    Write-Host "Uninstalling Claude Ads from $SkillBase and $AgentDir..."
 
-    # Remove main skill (orchestrator + references)
-    $MainSkill = Join-Path $ClaudeDir "skills\ads"
+    # Remove orchestrator
+    $MainSkill = Join-Path $SkillBase "ads"
     if (Test-Path $MainSkill) {
         Remove-Item -Path $MainSkill -Recurse -Force
     }
 
-    # Remove sub-skills
-    $SubSkills = @(
-        "ads-audit", "ads-google", "ads-meta", "ads-youtube",
-        "ads-linkedin", "ads-tiktok", "ads-microsoft", "ads-creative",
-        "ads-landing", "ads-budget", "ads-plan", "ads-competitor", "ads-apple",
-        "ads-dna", "ads-create", "ads-generate", "ads-photoshoot"
-    )
-    foreach ($skill in $SubSkills) {
-        $SkillPath = Join-Path $ClaudeDir "skills\$skill"
-        if (Test-Path $SkillPath) {
-            Remove-Item -Path $SkillPath -Recurse -Force
+    # Remove all ads-* sub-skills via glob
+    if (Test-Path $SkillBase) {
+        Get-ChildItem -Path $SkillBase -Directory -Filter "ads-*" -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item -Path $_.FullName -Recurse -Force
         }
     }
 
-    # Remove agents
+    # Remove bundled audit + creative agents
     $Agents = @(
         "audit-google", "audit-meta", "audit-creative",
         "audit-tracking", "audit-budget", "audit-compliance",
+        "audit-amazon", "audit-attribution", "audit-server-side",
         "creative-strategist", "visual-designer", "copy-writer", "format-adapter"
     )
     foreach ($agent in $Agents) {
-        $AgentPath = Join-Path $ClaudeDir "agents\$agent.md"
+        $AgentPath = Join-Path $AgentDir "$agent.md"
         if (Test-Path $AgentPath) {
             Remove-Item -Path $AgentPath -Force
         }

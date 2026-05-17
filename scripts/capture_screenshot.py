@@ -13,7 +13,7 @@ import os
 import sys
 from urllib.parse import urlparse
 
-from url_utils import validate_url
+from url_utils import sanitize_error, validate_url
 
 try:
     from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -79,7 +79,7 @@ def capture_screenshot(
     except PlaywrightTimeout:
         result["error"] = f"Page load timed out after {timeout}ms"
     except Exception as e:
-        result["error"] = str(e)
+        result["error"] = sanitize_error(e)
 
     return result
 
