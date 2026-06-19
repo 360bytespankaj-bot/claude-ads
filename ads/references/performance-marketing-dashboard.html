@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Performance Marketing Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:linear-gradient(135deg,#1a1f2e,#16213e);border-bottom:1px solid #2d3748;padding:20px 30px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:22px;font-weight:700;color:#fff}
+header h1 span{color:#6366f1}
+.badge{background:#6366f1;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.audit-date{color:#94a3b8;font-size:13px}
+.container{max-width:1400px;margin:0 auto;padding:24px 30px}
+.grade-banner{background:linear-gradient(135deg,#1e293b,#1a1f2e);border:1px solid #334155;border-left:5px solid #6366f1;border-radius:12px;padding:20px 28px;margin-bottom:24px;display:flex;align-items:center;gap:24px}
+.grade-circle{width:80px;height:80px;border-radius:50%;background:conic-gradient(#6366f1 0% 72%,#1e293b 72% 100%);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;box-shadow:0 0 20px rgba(99,102,241,0.4)}
+.grade-info h2{font-size:20px;font-weight:700;color:#fff}
+.grade-info p{color:#94a3b8;font-size:14px;margin-top:4px}
+.grade-meta{margin-left:auto;text-align:right}
+.grade-meta span{display:block;color:#94a3b8;font-size:13px}
+.grade-meta strong{color:#e2e8f0;font-size:15px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.green::before{background:#10b981}
+.kpi-card.yellow::before{background:#f59e0b}
+.kpi-card.red::before{background:#ef4444}
+.kpi-card.blue::before{background:#6366f1}
+.kpi-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:800;color:#fff;line-height:1}
+.kpi-target{font-size:11px;color:#64748b;margin-top:6px}
+.kpi-delta{font-size:12px;font-weight:600;margin-top:4px}
+.kpi-delta.up{color:#10b981}
+.kpi-delta.down{color:#ef4444}
+.kpi-icon{position:absolute;top:16px;right:16px;font-size:22px;opacity:0.15}
+.section-title{font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #334155;display:flex;align-items:center;gap:8px}
+.section-title .dot{width:8px;height:8px;border-radius:50%;background:#6366f1}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:0}
+.chart-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px}
+.table-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:24px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#0f172a;color:#64748b;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.6px;padding:10px 14px;text-align:left}
+td{padding:12px 14px;border-bottom:1px solid #1e293b;color:#e2e8f0}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#1a2035}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.status-pass{background:rgba(16,185,129,0.15);color:#10b981}
+.status-warn{background:rgba(245,158,11,0.15);color:#f59e0b}
+.status-fail{background:rgba(239,68,68,0.15);color:#ef4444}
+.plat-google{color:#4285f4;font-weight:700}
+.plat-meta{color:#1877f2;font-weight:700}
+.plat-tiktok{color:#ff0050;font-weight:700}
+.plat-linkedin{color:#0a66c2;font-weight:700}
+.plat-amazon{color:#ff9900;font-weight:700}
+.score-bar-wrap{margin-bottom:12px}
+.score-bar-label{display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:5px}
+.score-bar-track{background:#0f172a;border-radius:4px;height:8px}
+.score-bar-fill{height:8px;border-radius:4px}
+.funnel-wrap{display:flex;flex-direction:column;gap:8px}
+.funnel-stage{display:flex;align-items:center;gap:12px}
+.funnel-label{font-size:12px;color:#94a3b8;width:130px;flex-shrink:0}
+.funnel-bar-track{flex:1;background:#0f172a;border-radius:4px;height:24px}
+.funnel-bar-fill{height:24px;border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:11px;font-weight:600;color:#fff}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check-item{display:flex;align-items:center;gap:10px;background:#0f172a;border-radius:8px;padding:10px 14px}
+.check-icon{font-size:16px;flex-shrink:0}
+.check-text{font-size:12px;color:#cbd5e1}
+.action-week{margin-bottom:18px}
+.week-title{font-size:13px;font-weight:700;color:#6366f1;margin-bottom:10px}
+.action-item{display:flex;align-items:flex-start;gap:12px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.action-priority{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.pri-critical{background:rgba(239,68,68,0.15);color:#ef4444}
+.pri-high{background:rgba(245,158,11,0.15);color:#f59e0b}
+.pri-medium{background:rgba(99,102,241,0.15);color:#818cf8}
+.action-text{font-size:13px;color:#cbd5e1}
+.action-meta{font-size:11px;color:#475569;margin-top:3px}
+.quick-win{display:flex;align-items:center;gap:14px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.qw-rank{width:28px;height:28px;border-radius:50%;background:#6366f1;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.qw-content{flex:1}
+.qw-title{font-size:13px;font-weight:600;color:#e2e8f0}
+.qw-meta{font-size:11px;color:#64748b;margin-top:2px}
+.qw-impact{font-size:12px;font-weight:700;color:#10b981;white-space:nowrap}
+footer{text-align:center;padding:20px;color:#334155;font-size:12px;border-top:1px solid #1e293b;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+<div>
+<h1>Performance <span>Marketing</span> Dashboard</h1>
+<div class="audit-date">Audit Period: Last 30 Days | Generated by /ads performance-marketing</div>
+</div>
+<span class="badge">claude-ads v1.7.1</span>
+</header>
+<div class="container">
+<div class="grade-banner">
+<div class="grade-circle">72</div>
+<div class="grade-info">
+<h2>PM Health Score: 72 / 100 &nbsp; Grade: <span style="color:#f59e0b">C</span></h2>
+<p>Notable issues in attribution and budget allocation. Action required within 7 days.</p>
+</div>
+<div class="grade-meta">
+<span>Audit Date</span><strong id="auditDate"></strong>
+<span style="margin-top:8px">Next Audit</span><strong id="nextAudit"></strong>
+</div>
+</div>
+<div class="kpi-grid">
+<div class="kpi-card blue"><div class="kpi-icon">📊</div><div class="kpi-label">Blended ROAS</div><div class="kpi-value">2.8x</div><div class="kpi-target">Target: 3.0x</div><div class="kpi-delta down">7% below target</div></div>
+<div class="kpi-card yellow"><div class="kpi-icon">⚡</div><div class="kpi-label">MER</div><div class="kpi-value">2.6</div><div class="kpi-target">Target: 3.0</div><div class="kpi-delta down">Warning zone</div></div>
+<div class="kpi-card green"><div class="kpi-icon">🎯</div><div class="kpi-label">LTV : CAC</div><div class="kpi-value">3.2x</div><div class="kpi-target">Target: 3:1</div><div class="kpi-delta up">On target</div></div>
+<div class="kpi-card red"><div class="kpi-icon">💸</div><div class="kpi-label">nCAC</div><div class="kpi-value">$142</div><div class="kpi-target">Target: $120</div><div class="kpi-delta down">18% over target</div></div>
+<div class="kpi-card green"><div class="kpi-icon">💰</div><div class="kpi-label">Total Spend</div><div class="kpi-value">$24.8k</div><div class="kpi-target">Budget: $25k</div><div class="kpi-delta up">On pace</div></div>
+<div class="kpi-card yellow"><div class="kpi-icon">🗑️</div><div class="kpi-label">Budget Waste</div><div class="kpi-value">13%</div><div class="kpi-target">Target: 8%</div><div class="kpi-delta down">Above threshold</div></div>
+</div>
+<div class="two-col">
+<div class="chart-card"><div class="section-title"><span class="dot"></span>ROAS by Platform</div><canvas id="roasChart" height="220"></canvas></div>
+<div class="chart-card"><div class="section-title"><span class="dot"></span>Spend Distribution</div><canvas id="spendChart" height="220"></canvas></div>
+</div>
+<div class="table-card">
+<div class="section-title"><span class="dot"></span>Platform Breakdown</div>
+<table>
+<thead><tr><th>Platform</th><th>Spend</th><th>Revenue</th><th>ROAS</th><th>CPA</th><th>CTR</th><th>CVR</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td class="plat-google">Google Ads</td><td>$11,200</td><td>$34,500</td><td>3.08x</td><td>$48</td><td>4.2%</td><td>3.1%</td><td><span class="status-badge status-pass">PASS</span></td></tr>
+<tr><td class="plat-meta">Meta Ads</td><td>$7,400</td><td>$17,800</td><td>2.41x</td><td>$76</td><td>1.2%</td><td>1.8%</td><td><span class="status-badge status-warn">WARN</span></td></tr>
+<tr><td class="plat-tiktok">TikTok Ads</td><td>$3,200</td><td>$5,900</td><td>1.84x</td><td>$112</td><td>1.8%</td><td>1.1%</td><td><span class="status-badge status-fail">FAIL</span></td></tr>
+<tr><td class="plat-linkedin">LinkedIn Ads</td><td>$2,100</td><td>$7,400</td><td>3.52x</td><td>$94</td><td>0.8%</td><td>4.2%</td><td><span class="status-badge status-pass">PASS</span></td></tr>
+<tr><td class="plat-amazon">Amazon Ads</td><td>$900</td><td>$3,800</td><td>4.22x</td><td>$31</td><td>0.4%</td><td>6.8%</td><td><span class="status-badge status-pass">PASS</span></td></tr>
+<tr style="background:#0f172a;font-weight:700"><td>Blended Total</td><td>$24,800</td><td>$69,400</td><td>2.80x</td><td>$61</td><td>2.4%</td><td>2.6%</td><td><span class="status-badge status-warn">WARN</span></td></tr>
+</tbody>
+</table>
+</div>
+<div class="two-col">
+<div class="chart-card">
+<div class="section-title"><span class="dot"></span>Full-Funnel Performance</div>
+<div class="funnel-wrap">
+<div class="funnel-stage"><div class="funnel-label">Impressions</div><div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:100%;background:#6366f1">2.4M</div></div></div>
+<div class="funnel-stage"><div class="funnel-label">Clicks (CTR 2.4%)</div><div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:72%;background:#818cf8">57.6K</div></div></div>
+<div class="funnel-stage"><div class="funnel-label">Visits (CVR 2.6%)</div><div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:48%;background:#a5b4fc">1,498</div></div></div>
+<div class="funnel-stage"><div class="funnel-label">Add to Cart (38%)</div><div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:30%;background:#f59e0b">569</div></div></div>
+<div class="funnel-stage"><div class="funnel-label">Checkout (54%)</div><div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:18%;background:#10b981">307</div></div></div>
+<div class="funnel-stage"><div class="funnel-label">Purchase</div><div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:10%;background:#059669">247</div></div></div>
+</div>
+</div>
+<div class="chart-card">
+<div class="section-title"><span class="dot"></span>Attribution and Tracking Health</div>
+<div class="check-grid">
+<div class="check-item"><span class="check-icon">✅</span><span class="check-text">Conversion actions verified</span></div>
+<div class="check-item"><span class="check-icon">✅</span><span class="check-text">Consent Mode V2 active</span></div>
+<div class="check-item"><span class="check-icon">⚠️</span><span class="check-text">Deduplication (partial)</span></div>
+<div class="check-item"><span class="check-icon">✅</span><span class="check-text">CAPI / Server-Side Events</span></div>
+<div class="check-item"><span class="check-icon">❌</span><span class="check-text">GA4 cross-domain tracking</span></div>
+<div class="check-item"><span class="check-icon">⚠️</span><span class="check-text">UTM parameters (gaps)</span></div>
+<div class="check-item"><span class="check-icon">✅</span><span class="check-text">Attribution window aligned</span></div>
+<div class="check-item"><span class="check-icon">❌</span><span class="check-text">MMP configured</span></div>
+</div>
+<div style="margin-top:16px">
+<div class="section-title" style="margin-top:10px"><span class="dot"></span>Category Scores</div>
+<div class="score-bar-wrap"><div class="score-bar-label"><span>Attribution and Tracking</span><span>58/100</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:58%;background:#ef4444"></div></div></div>
+<div class="score-bar-wrap"><div class="score-bar-label"><span>ROAS and CPA Efficiency</span><span>71/100</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:71%;background:#f59e0b"></div></div></div>
+<div class="score-bar-wrap"><div class="score-bar-label"><span>Budget Allocation</span><span>65/100</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:65%;background:#f59e0b"></div></div></div>
+<div class="score-bar-wrap"><div class="score-bar-label"><span>Funnel Performance</span><span>80/100</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:80%;background:#10b981"></div></div></div>
+<div class="score-bar-wrap"><div class="score-bar-label"><span>Creative and Audience</span><span>74/100</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:74%;background:#6366f1"></div></div></div>
+<div class="score-bar-wrap"><div class="score-bar-label"><span>Cross-Channel Synergy</span><span>82/100</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:82%;background:#10b981"></div></div></div>
+</div>
+</div>
+</div>
+<div class="chart-card" style="margin-bottom:24px">
+<div class="section-title"><span class="dot"></span>Quick Wins - Top 5</div>
+<div class="quick-win"><div class="qw-rank">1</div><div class="qw-content"><div class="qw-title">Fix GA4 cross-domain tracking - silent revenue leak</div><div class="qw-meta">Platform: GA4 | Time: 1 hr | Owner: Tech</div></div><div class="qw-impact">+$3,200/mo</div></div>
+<div class="quick-win"><div class="qw-rank">2</div><div class="qw-content"><div class="qw-title">Pause 3 TikTok ad groups breaching Kill Rule (CPA over 2x target)</div><div class="qw-meta">Platform: TikTok | Time: 15 min | Owner: Paid Social</div></div><div class="qw-impact">+$1,800/mo</div></div>
+<div class="quick-win"><div class="qw-rank">3</div><div class="qw-content"><div class="qw-title">Reallocate $1.2k from TikTok to Amazon (4.22x vs 1.84x ROAS)</div><div class="qw-meta">Platform: Amazon/TikTok | Time: 30 min | Owner: Media Buyer</div></div><div class="qw-impact">+$2,400/mo</div></div>
+<div class="quick-win"><div class="qw-rank">4</div><div class="qw-content"><div class="qw-title">Add dedup event IDs to Meta CAPI - removes double-counted conversions</div><div class="qw-meta">Platform: Meta | Time: 2 hrs | Owner: Tech</div></div><div class="qw-impact">+$950/mo</div></div>
+<div class="quick-win"><div class="qw-rank">5</div><div class="qw-content"><div class="qw-title">Fix UTM gaps on Meta campaigns - 18% of clicks unattributed</div><div class="qw-meta">Platform: Meta | Time: 1 hr | Owner: Paid Social</div></div><div class="qw-impact">+$600/mo</div></div>
+</div>
+<div class="chart-card" style="margin-bottom:24px">
+<div class="section-title"><span class="dot"></span>30-Day Action Plan</div>
+<div class="three-col">
+<div class="action-week">
+<div class="week-title">Week 1 - Fix Critical Issues</div>
+<div class="action-item"><span class="action-priority pri-critical">Critical</span><div><div class="action-text">Fix GA4 cross-domain tracking</div><div class="action-meta">Owner: Tech | Impact: $3,200/mo</div></div></div>
+<div class="action-item"><span class="action-priority pri-critical">Critical</span><div><div class="action-text">Pause TikTok Kill Rule campaigns</div><div class="action-meta">Owner: Paid Social | Impact: $1,800/mo</div></div></div>
+<div class="action-item"><span class="action-priority pri-high">High</span><div><div class="action-text">Fix CAPI deduplication logic</div><div class="action-meta">Owner: Tech | Impact: $950/mo</div></div></div>
+</div>
+<div class="action-week">
+<div class="week-title">Week 2 - Optimize Budget</div>
+<div class="action-item"><span class="action-priority pri-high">High</span><div><div class="action-text">Shift $1.2k spend TikTok to Amazon</div><div class="action-meta">Owner: Media Buyer | Impact: $2,400/mo</div></div></div>
+<div class="action-item"><span class="action-priority pri-high">High</span><div><div class="action-text">Tighten Meta audiences to reduce CPA</div><div class="action-meta">Owner: Paid Social | Impact: $600/mo</div></div></div>
+<div class="action-item"><span class="action-priority pri-medium">Medium</span><div><div class="action-text">Enable tROAS on Google PMax</div><div class="action-meta">Owner: SEM | Impact: +0.3x ROAS</div></div></div>
+</div>
+<div class="action-week">
+<div class="week-title">Week 3-4 - Creative and Scale</div>
+<div class="action-item"><span class="action-priority pri-high">High</span><div><div class="action-text">Launch 10 new Meta creatives</div><div class="action-meta">Owner: Creative | Impact: Reduce fatigue</div></div></div>
+<div class="action-item"><span class="action-priority pri-medium">Medium</span><div><div class="action-text">Set up cross-channel suppression list</div><div class="action-meta">Owner: Paid Media | Impact: -15% waste</div></div></div>
+<div class="action-item"><span class="action-priority pri-medium">Medium</span><div><div class="action-text">Run incrementality geo-split test</div><div class="action-meta">Owner: Analytics | Impact: True ROAS</div></div></div>
+</div>
+</div>
+</div>
+<div class="chart-card" style="margin-bottom:24px">
+<div class="section-title"><span class="dot"></span>Weekly Performance Tracker</div>
+<canvas id="weeklyChart" height="100"></canvas>
+</div>
+</div>
+<footer>Performance Marketing Dashboard | Generated by claude-ads /ads performance-marketing | MIT License | AgriciDaniel/claude-ads</footer>
+<script>
+const today=new Date();
+document.getElementById('auditDate').textContent=today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+const next=new Date(today);next.setDate(next.getDate()+7);
+document.getElementById('nextAudit').textContent=next.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+new Chart(document.getElementById('roasChart'),{type:'bar',data:{labels:['Google','Meta','TikTok','LinkedIn','Amazon'],datasets:[{label:'ROAS',data:[3.08,2.41,1.84,3.52,4.22],backgroundColor:['#4285f4','#1877f2','#ff0050','#0a66c2','#ff9900'],borderRadius:6},{label:'Target 3.0x',data:[3,3,3,3,3],type:'line',borderColor:'#6366f1',borderDash:[5,5],pointRadius:0,fill:false}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}},y:{ticks:{color:'#64748b'},grid:{color:'#1e293b'},suggestedMax:5}}}});
+new Chart(document.getElementById('spendChart'),{type:'doughnut',data:{labels:['Google $11.2k','Meta $7.4k','TikTok $3.2k','LinkedIn $2.1k','Amazon $0.9k'],datasets:[{data:[11200,7400,3200,2100,900],backgroundColor:['#4285f4','#1877f2','#ff0050','#0a66c2','#ff9900'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:11},padding:10}}}}});
+new Chart(document.getElementById('weeklyChart'),{type:'line',data:{labels:['Week 1','Week 2','Week 3','Week 4'],datasets:[{label:'Blended ROAS',data:[2.4,2.6,2.9,2.8],borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:0.4,yAxisID:'y'},{label:'MER',data:[2.2,2.5,2.7,2.6],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.4,yAxisID:'y'},{label:'Spend $k',data:[5.8,6.2,6.4,6.4],borderColor:'#f59e0b',borderDash:[4,4],tension:0.4,yAxisID:'y2'}]},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}},y:{ticks:{color:'#64748b'},grid:{color:'#1e293b'},title:{display:true,text:'ROAS / MER',color:'#64748b'}},y2:{position:'right',ticks:{color:'#f59e0b'},grid:{drawOnChartArea:false},title:{display:true,text:'Spend $k',color:'#f59e0b'}}}}});
+</script>
+</body>
+</html>
